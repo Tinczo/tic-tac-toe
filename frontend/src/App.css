@@ -1,0 +1,106 @@
+body {
+  background: #745500;
+  color: #ab7d00;
+}
+
+h1 {
+  text-align: center;
+  color: #fff;
+}
+
+.clearfix {
+  clear: both;
+}
+
+#box {
+  width: 350px;
+  overflow: auto;
+  margin: 40px auto;
+  background: #001b4d;
+  padding-bottom: 40px;
+  border-radius: 10px;
+}
+
+#message {
+  background: #745500;
+  color: #fff;
+}
+
+.centered-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+
+.input-text {
+  width: 80%;
+  margin-bottom: 20px;
+  padding: 8px;
+  font-size: 16px;
+  font-family: 'Arial', sans-serif;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+}
+
+
+#gameBoard li {
+  float: left;
+  margin: 10px;
+  height: 70px;
+  width: 70px;
+  font-size: 50px;
+  background: #4d3900;
+  color: #ccc;
+  list-style: none;
+  text-align: center;
+  border-radius: 5px;
+}
+
+#gameBoard li:hover, #reset:hover {
+  cursor: pointer;
+  background: #4d3900;
+}
+
+#reset {
+  border: 0;
+  background: #745500;
+  color: #fff;
+  width: 70%;
+  padding: 15px;
+  border-radius: 5px;
+}
+
+.o {
+  color: #513b00 !important;
+}
+
+.x {
+  color: #513b00 !important;
+}
+
+footer {
+  display: block;
+  text-align: center;
+  padding-top: 20px;
+}
+
+.button { 
+  padding: 10px 20px;
+  font-size: 16px;
+  color: #FFFFFF; 
+  background-color: #745500;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.button:hover {
+  background-color: #674c00;
+}
+
+.button-margin {
+  margin-bottom: 15px;
+}
