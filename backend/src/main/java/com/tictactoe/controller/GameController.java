@@ -13,8 +13,12 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
+import org.springframework.security.core.context.*;
+import org.springframework.security.core.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 @RestController
 @Slf4j
@@ -24,11 +28,6 @@ import org.springframework.web.multipart.MultipartFile;
 public class GameController {
     private final GameService gameService;
     private final SimpMessagingTemplate simpMessagingTemplate;
-
-    /*@PostMapping("/picture")
-    public ResponseEntity<Status> picture(@RequestParam("file") MultipartFile file, @RequestParam("username") String username) {
-
-    }*/
 
     @PostMapping("/start")
     public ResponseEntity<Game> start(@RequestBody Player player){

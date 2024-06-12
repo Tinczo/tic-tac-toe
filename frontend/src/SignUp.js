@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import UserPool from "./UserPool";
 import "./Cognito.css";
-import AWS from 'aws-sdk';
 
 const SignUp = () => {
     const [username, setUsername] = useState('');
@@ -16,24 +15,23 @@ const SignUp = () => {
         setPreview(URL.createObjectURL(file));
     };
 
-    const uploadToS3 = async (file, username) => {
-        // Konfiguracja AWS SDK bez poświadczeń - używamy domyślnych poświadczeń instancji EC2
-        AWS.config.update({ region: process.env.REACT_APP_AWS_REGION });
+    const uploadToBackend = async (file) => {
+        const formData = new FormData();
+        formData.append('file', file);
 
-        const s3 = new AWS.S3();
-
-        const extension = file.name.split('.').pop();
-        const key = `${username}.${extension}`;
-
-        const params = {
-            Bucket: process.env.REACT_APP_S3_BUCKET_NAME,
-            Key: key,
-            Body: file,
-            ContentType: file.type,
-        };
+        const ip = process.env.REACT_APP_BACKEND_IP;
+        const url = `http://${ip}:8080/upload/picture`;
 
         try {
-            await s3.upload(params).promise();
+            const response = await fetch(url, {
+                method: 'POST',
+                body: formData,
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to upload file');
+            }
+
             console.log('File uploaded successfully');
         } catch (error) {
             console.error('Error uploading file:', error);
@@ -75,7 +73,7 @@ const SignUp = () => {
                     }
                     console.log('call result: ' + result);
                     if (profilePicture) {
-                        await uploadToS3(profilePicture, username);
+                        await uploadToBackend(profilePicture);
                     }
                 });
             } else {
