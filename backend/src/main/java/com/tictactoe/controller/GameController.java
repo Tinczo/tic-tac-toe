@@ -7,12 +7,14 @@ import com.tictactoe.exception.InvalidParamException;
 import com.tictactoe.model.Game;
 import com.tictactoe.model.GamePlay;
 import com.tictactoe.model.Player;
+import com.tictactoe.model.Status;
 import com.tictactoe.service.GameService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @Slf4j
@@ -22,6 +24,11 @@ import org.springframework.web.bind.annotation.*;
 public class GameController {
     private final GameService gameService;
     private final SimpMessagingTemplate simpMessagingTemplate;
+
+    /*@PostMapping("/picture")
+    public ResponseEntity<Status> picture(@RequestParam("file") MultipartFile file, @RequestParam("username") String username) {
+
+    }*/
 
     @PostMapping("/start")
     public ResponseEntity<Game> start(@RequestBody Player player){
