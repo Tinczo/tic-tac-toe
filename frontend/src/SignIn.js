@@ -30,9 +30,26 @@ const SignIn = () => {
             },
             onFailure: err => {
                 console.error('authentication failed: ', err);
+                if (err.message === "User is not confirmed.") {
+                    var verificationCode = ""
+                    while (verificationCode.length === 0) {
+                        verificationCode = prompt('User not confirmed. Please input verification code: ', '');
+                        
+                    if (verificationCode) {
+                        user.confirmRegistration(verificationCode, false, function (err, result) {
+                            if (err) {
+                                alert(err.message || JSON.stringify(err));
+                                return;
+                            }
+                            console.log('call result: ' + result);
+                        });
+                    }
+                }
+            }
             }
         });
     };
+
 
     return (
         <div className="text-center" id="loginBox">

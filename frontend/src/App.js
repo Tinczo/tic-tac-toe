@@ -21,11 +21,9 @@ function App() {
     ["#", "#", "#"],
   ]);
   const [gameOn, setGameOn] = useState(false);
-  const [nickname, setNickname] = useState("");
   const [player1, setPlayer1] = useState("");
   const [player2, setPlayer2] = useState("");
   const [showSignUp, setShowSignUp] = useState(false);
-
 
   const [currentTurn, setCurrentTurn] = useState("");
 
@@ -69,13 +67,9 @@ function App() {
     const accessToken = localStorage.getItem("accessToken");
 
     try {
-      console.log(process.env);
-      console.log("IPS:");
-      console.log(url);
-      console.log("process.env.REACT_APP_BACKEND_IP");
       const response = await axios.post(
         url + "/game/start",
-        { nickname: localStorage.getItem('username') },
+        { nickname: localStorage.getItem("username") },
         {
           headers: {
             Authorization: `Bearer ${accessToken}`,
@@ -85,8 +79,13 @@ function App() {
       setGameId(response.data.gameId);
       setPlayerType("X");
       setCurrentTurn("X");
+      setPlayer1(response.data.player1.nickname);
+      setPlayer2("");
       start();
-      alert("Stworzyłeś grę o idetyfikatorze " + response.data.gameId);
+      alert("Stworzyłeś grę o identyfikatorze " + response.data.gameId);
+      
+      // console.log(process.env.REACT_APP_AWS_ACCESS_KEY_ID);
+
       setGameOn(true);
     } catch (error) {
       console.log(error);
@@ -102,7 +101,6 @@ function App() {
   };
 
   const connectToRandom = async () => {
-
     await refreshSessionTokenIfNeeded();
 
     const accessToken = localStorage.getItem("accessToken");
@@ -110,7 +108,7 @@ function App() {
     try {
       const response = await axios.post(
         url + "/game/connect/random",
-        { nickname: localStorage.getItem('username') },
+        { nickname: localStorage.getItem("username") },
         {
           headers: {
             Authorization: `Bearer ${accessToken}`,
@@ -123,6 +121,8 @@ function App() {
       connectToSocket(response.data.gameId);
       alert("Rozpoczynasz swoją grę z " + response.data.player1.nickname);
       setGameOn(true);
+      setPlayer1(response.data.player1.nickname);
+      setPlayer2(response.data.player2.nickname);
       displayResponse(response.data);
     } catch (error) {
       console.log(error);
@@ -193,87 +193,121 @@ function App() {
     >
       {localStorage.getItem("accessToken") ? (
         <div>
-          <h1 style={{ fontFamily: "'Press Start 2P', cursive", color: "#fff" }}>Tic Tac Toe</h1>
-
-          <div
-            id="box"
-            style={{
-              background: "#4d3900",
-              padding: "20px",
-              borderRadius: "10px",
-              maxWidth: "350px",
-              margin: "10px auto",
-            }}
-            className="centered-container"
+          <h1
+            style={{ fontFamily: "'Press Start 2P', cursive", color: "#fff" }}
           >
-            <button className="button button-margin" onClick={createGame}>
-              Stwórz grę
-            </button>
-            <input
-              type="text"
-              id="gameId"
-              placeholder="Identyfikator gry"
-              value={gameId}
-              onChange={handleGameIdChange}
-              className="input-text"
-            />
-            <button className="button" onClick={connectToRandom}>
-              Dołącz do losowej gry
-            </button>
-            <ul
-              id="gameBoard"
-              style={{
-                display: "flex",
-                flexWrap: "wrap",
-                justifyContent: "center",
-                alignItems: "center",
-                height: "100%",
-                listStyle: "none",
-                padding: 0,
-              }}
-            >
-              {turns.map((row, i) =>
-                row.map((cell, j) => (
-                  <li
-                    key={`${i}-${j}`}
-                    onClick={() => makeAMove(i, j)}
+            Tic Tac Toe
+          </h1>
+          <table style={{ width: '100%', tableLayout: 'fixed' }}>
+            <tr>
+            <td style={{ textAlign: 'center' }}>
+              <h1 style={{ fontFamily: "'Press Start 2P', cursive", color: "#fff" }}>
+                X
+              </h1>
+              <h1>{player1}</h1>
+            </td>
+              <td>
+                <div
+                  id="box"
+                  style={{
+                    background: "#4d3900",
+                    padding: "20px",
+                    borderRadius: "10px",
+                    maxWidth: "350px",
+                    margin: "10px auto",
+                  }}
+                  className="centered-container"
+                >
+                  <button className="button button-margin" onClick={createGame}>
+                    Stwórz grę
+                  </button>
+                  <input
+                    type="text"
+                    id="gameId"
+                    placeholder="Identyfikator gry"
+                    value={gameId}
+                    onChange={handleGameIdChange}
+                    className="input-text"
+                  />
+                  <button className="button" onClick={connectToRandom}>
+                    Dołącz do losowej gry
+                  </button>
+                  <ul
+                    id="gameBoard"
                     style={{
-                      float: "left",
-                      margin: "10px",
-                      height: "70px",
-                      width: "70px",
-                      textAlign: "center",
-                      fontSize: "50px",
-                      background: "#9a7100",
-                      color: "#ccc",
-                      textAlign: "center",
-                      borderRadius: "5px",
+                      display: "flex",
+                      flexWrap: "wrap",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      height: "100%",
+                      listStyle: "none",
+                      padding: 0,
                     }}
-                    className={cell === "X" ? "x" : cell === "O" ? "o" : ""}
                   >
-                    {cell !== "#" ? cell : ""}
-                  </li>
-                ))
-              )}
-            </ul>
-            <div className="clearfix" style={{ clear: "both" }}></div>
-          </div>
+                    {turns.map((row, i) =>
+                      row.map((cell, j) => (
+                        <li
+                          key={`${i}-${j}`}
+                          onClick={() => makeAMove(i, j)}
+                          style={{
+                            float: "left",
+                            margin: "10px",
+                            height: "70px",
+                            width: "70px",
+                            textAlign: "center",
+                            fontSize: "50px",
+                            background: "#9a7100",
+                            color: "#ccc",
+                            textAlign: "center",
+                            borderRadius: "5px",
+                          }}
+                          className={
+                            cell === "X" ? "x" : cell === "O" ? "o" : ""
+                          }
+                        >
+                          {cell !== "#" ? cell : ""}
+                        </li>
+                      ))
+                    )}
+                  </ul>
+                  <div className="clearfix" style={{ clear: "both" }}></div>
+                </div>
+              </td>
+
+              <td style={{ textAlign: 'center' }}>
+              <h1 style={{ fontFamily: "'Press Start 2P', cursive", color: "#fff" }}>
+                O
+              </h1>
+              <h1>{player2}</h1>
+            </td>
+            </tr>
+          </table>
           <SignOut />
         </div>
       ) : (
         <div className="centered-container">
-        {showSignUp ? (
-          <>
-            <SignUp />
-            <button className="switchButton" onClick={() => setShowSignUp(false)}>Masz już konto? Zaloguj się</button>
-          </>
-        ) : (
-          <>
-            <SignIn />
-            <button className="switchButton" onClick={() => setShowSignUp(true)}>Nie masz konta? Zarejestruj się</button>
-          </>
-        )}
-      </div>
+          {showSignUp ? (
+            <>
+              <SignUp />
+              <button
+                className="switchButton"
+                onClick={() => setShowSignUp(false)}
+              >
+                Masz już konto? Zaloguj się
+              </button>
+            </>
+          ) : (
+            <>
+              <SignIn />
+              <button
+                className="switchButton"
+                onClick={() => setShowSignUp(true)}
+              >
+                Nie masz konta? Zarejestruj się
+              </button>
+            </>
+          )}
+        </div>
       )}
     </div>
   );

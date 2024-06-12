@@ -12,13 +12,21 @@ VPC_ID=$(curl -H "$TOKEN_HEADER" -s $METADATA_URL/network/interfaces/macs/${INTE
 # Pobranie wartości z AWS Secrets Manager
 USER_POOL_ID=$(aws secretsmanager get-secret-value --region us-east-1 --secret-id "myproject/userpool" --query "SecretString" --output text)
 CLIENT_ID=$(aws secretsmanager get-secret-value --region us-east-1 --secret-id "myproject/appclient" --query "SecretString" --output text)
+BUCKET_NAME=$(aws secretsmanager get-secret-value --region us-east-1 --secret-id "myproject/s3bucketid" --query "SecretString" --output text)
+
 REGION="us-east-1"
+REACT_APP_BACKEND_IP=$IP_V4
+REACT_APP_USER_POOL_ID=$USER_POOL_ID
+REACT_APP_CLIENT_ID=$CLIENT_ID
+REACT_APP_S3_BUCKET_NAME=$BUCKET_NAME
 
 # Zapisanie zmiennych środowiskowych do pliku .env
 echo "REACT_APP_BACKEND_IP=$IP_V4" > .env
 echo "REACT_APP_USER_POOL_ID=$USER_POOL_ID" >> .env
 echo "REACT_APP_CLIENT_ID=$CLIENT_ID" >> .env
 echo "REACT_APP_REGION=$REGION" >> .env
+echo "REACT_APP_AWS_REGION=$REGION" >> .env
+echo "REACT_APP_S3_BUCKET_NAME=$BUCKET_NAME" >> .env
 
 # Echo do konsoli dla sprawdzenia
 echo "Zmienne środowiskowe:"
