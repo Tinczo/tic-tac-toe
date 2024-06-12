@@ -10,9 +10,9 @@ SUBNET_ID=$(curl -H "$TOKEN_HEADER" -s $METADATA_URL/network/interfaces/macs/${I
 VPC_ID=$(curl -H "$TOKEN_HEADER" -s $METADATA_URL/network/interfaces/macs/${INTERFACE}/vpc-id)
 
 # Pobranie wartości z AWS Secrets Manager
-USER_POOL_ID=$(aws secretsmanager get-secret-value --region us-east-1 --secret-id "myproject/userpool" --query "SecretString" --output text)
-CLIENT_ID=$(aws secretsmanager get-secret-value --region us-east-1 --secret-id "myproject/appclient" --query "SecretString" --output text)
-BUCKET_NAME=$(aws secretsmanager get-secret-value --region us-east-1 --secret-id "myproject/s3bucketid" --query "SecretString" --output text)
+USER_POOL_ID=$(aws secretsmanager get-secret-value --region us-east-1 --secret-id "app/userpool" --query "SecretString" --output text)
+CLIENT_ID=$(aws secretsmanager get-secret-value --region us-east-1 --secret-id "app/appclient" --query "SecretString" --output text)
+BUCKET_NAME=$(aws secretsmanager get-secret-value --region us-east-1 --secret-id "app/s3bucketid" --query "SecretString" --output text)
 
 REGION="us-east-1"
 REACT_APP_BACKEND_IP=$IP_V4
