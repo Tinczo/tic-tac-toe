@@ -19,6 +19,7 @@ import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.internal.crt.DefaultS3CrtAsyncClient;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 
 @Configuration
 @EnableWebSecurity
@@ -34,8 +35,8 @@ public class SecurityConfiguration {
 
     @Autowired
     public SecurityConfiguration(@Value("${cognito.issuer-uri}") String issuerUri) {
-//         this.issuerUri=issuerUri+"us-east-1_9qsn9367w";
-        this.issuerUri=issuerUri+System.getenv("USER_POOL_ID"); //TODO: Done
+         this.issuerUri=issuerUri+"us-east-1_eMJzvKBMZ";
+//        this.issuerUri=issuerUri+System.getenv("USER_POOL_ID"); //TODO:
 
     }
 
@@ -61,7 +62,15 @@ public class SecurityConfiguration {
     public S3Client s3Client() {
         return S3Client.builder()
                 .region(Region.US_EAST_1)
-//                .credentialsProvider(StaticCredentialsProvider.create(AwsSessionCredentials.create(aws_access_key_id, aws_secret_access_key, aws_session_token))).build();
-                .credentialsProvider(InstanceProfileCredentialsProvider.create()).build(); //TODO: Done
+                .credentialsProvider(StaticCredentialsProvider.create(AwsSessionCredentials.create(aws_access_key_id, aws_secret_access_key, aws_session_token))).build();
+//                .credentialsProvider(InstanceProfileCredentialsProvider.create()).build(); //TODO:
+    }
+
+    @Bean
+    public S3Presigner s3Presigner() {
+        return S3Presigner.builder()
+                .region(Region.US_EAST_1)
+                .credentialsProvider(StaticCredentialsProvider.create(AwsSessionCredentials.create(aws_access_key_id, aws_secret_access_key, aws_session_token))).build();
+//              .credentialsProvider(InstanceProfileCredentialsProvider.create()).build(); //TODO:
     }
 }

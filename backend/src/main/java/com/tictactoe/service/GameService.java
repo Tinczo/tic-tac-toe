@@ -1,19 +1,30 @@
 package com.tictactoe.service;
 
+import com.tictactoe.exception.GameNotFoundException;
 import com.tictactoe.exception.InvalidGameException;
 import com.tictactoe.exception.InvalidParamException;
-import com.tictactoe.exception.GameNotFoundException;
 import com.tictactoe.model.*;
 import com.tictactoe.storage.GameStorage;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
+import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
 
+import java.time.Duration;
 import java.util.UUID;
 
 @Service
 @AllArgsConstructor
 public class GameService {
+
+    private final S3Client s3Client;
+    private final S3Presigner s3Presigner;
+
     public Game createGame(Player player){
+        player.setPhotoURL(getPhotoUrl(player.getNickname()));
         Game game = new Game();
         game.setBoard(new int[3][3]);
         game.setGameId(UUID.randomUUID().toString());
@@ -33,6 +44,7 @@ public class GameService {
             throw new InvalidGameException("Game is not valid anymore!");
         }
 
+        player2.setPhotoURL(getPhotoUrl(player2.getNickname()));
         game.setPlayer2(player2);
         game.setStatus(GameStatus.IN_PROGRESS);
         GameStorage.getInstance().setGame(game);
@@ -41,11 +53,12 @@ public class GameService {
 
     public Game connectToRandomGame(Player player2) throws GameNotFoundException {
         Game game = GameStorage.getInstance().getGames().values().stream()
-                .filter(it->it.getStatus().equals(GameStatus.NEW))
+                .filter(it -> it.getStatus().equals(GameStatus.NEW))
                 .filter(it -> !it.getPlayer1().equals(player2))
                 .findFirst()
                 .orElseThrow(() -> new GameNotFoundException("Game not found!"));
 
+        player2.setPhotoURL(getPhotoUrl(player2.getNickname()));
         game.setPlayer2(player2);
         game.setStatus(GameStatus.IN_PROGRESS);
         GameStorage.getInstance().setGame(game);
@@ -125,5 +138,26 @@ public class GameService {
         return false;
     }
 
+    private String getPhotoUrl(String nickname) {
+//        String bucketName = System.getenv("REACT_APP_S3_BUCKET_NAME"); //TODO:
+        String bucketName = "tic-tac-toe-266586";
+         try {
+             GetObjectRequest getObjectRequest = GetObjectRequest.builder()
+                     .bucket(bucketName)
+                     .key(nickname)
+                     .build();
 
+             GetObjectPresignRequest getObjectPresignRequest = GetObjectPresignRequest.builder()
+                     .signatureDuration(Duration.ofMinutes(10))
+                     .getObjectRequest(getObjectRequest)
+                     .build();
+
+             PresignedGetObjectRequest presignedGetObjectRequest = s3Presigner.presignGetObject(getObjectPresignRequest);
+             String photoUrl = presignedGetObjectRequest.url().toString();
+             return photoUrl;
+         } catch (Exception e) {
+             // Ignorujemy wyjątek, próbujemy następne rozszerzenie
+         }
+        return "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTOwRConBYl2t6L8QMOAQqa5FDmPB_bg7EnGA&s"; // Zwraca null jeśli żadne z rozszerzeń nie pasuje
+    }
 }

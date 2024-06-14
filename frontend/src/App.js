@@ -23,7 +23,10 @@ function App() {
   const [gameOn, setGameOn] = useState(false);
   const [player1, setPlayer1] = useState("");
   const [player2, setPlayer2] = useState("");
+  const [player1Photo, setPlayer1Photo] = useState("");
+  const [player2Photo, setPlayer2Photo] = useState("");
   const [showSignUp, setShowSignUp] = useState(false);
+  const [winner, setWinner] = useState("");
 
   const [currentTurn, setCurrentTurn] = useState("");
 
@@ -45,7 +48,9 @@ function App() {
           const data = JSON.parse(message.body);
           console.log(data);
           setPlayer1(data.player1.nickname);
+          setPlayer1Photo(data.player1.photoURL);
           setPlayer2(data.player2.nickname);
+          setPlayer2Photo(data.player2.photoURL);
           displayResponse(data);
         });
       },
@@ -80,11 +85,15 @@ function App() {
       setPlayerType("X");
       setCurrentTurn("X");
       setPlayer1(response.data.player1.nickname);
+      setPlayer1Photo(response.data.player1.photoURL);
       setPlayer2("");
+      setPlayer2Photo("");
+      setWinner("");
       start();
       alert("Stworzyłeś grę o identyfikatorze " + response.data.gameId);
       
       // console.log(process.env.REACT_APP_AWS_ACCESS_KEY_ID);
+      connectToSocket(response.data.gameId);
 
       setGameOn(true);
     } catch (error) {
@@ -121,8 +130,12 @@ function App() {
       connectToSocket(response.data.gameId);
       alert("Rozpoczynasz swoją grę z " + response.data.player1.nickname);
       setGameOn(true);
+      setWinner("");
       setPlayer1(response.data.player1.nickname);
+      setPlayer1Photo(response.data.player1.photoURL);
       setPlayer2(response.data.player2.nickname);
+      setPlayer2Photo(response.data.player2.photoURL);
+
       displayResponse(response.data);
     } catch (error) {
       console.log(error);
@@ -170,9 +183,13 @@ function App() {
       })
     );
     setTurns(newTurns);
+    
     if (data.winner) {
-      alert("Wygrał " + data.winner);
-      setGameOn(false);
+      if (winner === ""){
+        alert("Wygrał " + data.winner);
+        setWinner(data.winner);
+        setGameOn(false);
+      }
     } else {
       setCurrentTurn(data.currentTurn);
       setGameOn(true);
@@ -205,6 +222,7 @@ function App() {
                 X
               </h1>
               <h1>{player1}</h1>
+              {player1Photo && <img src={player1Photo} alt={`${player1}'s profile`} style={{ width: '100px', height: '100px', objectFit: 'cover' }} />}
             </td>
               <td>
                 <div
@@ -279,6 +297,7 @@ function App() {
                 O
               </h1>
               <h1>{player2}</h1>
+              {player2Photo && <img src={player2Photo} alt={`${player2}'s profile`} style={{ width: '100px', height: '100px', objectFit: 'cover' }} />}
             </td>
             </tr>
           </table>

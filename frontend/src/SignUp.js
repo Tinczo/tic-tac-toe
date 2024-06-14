@@ -17,27 +17,29 @@ const SignUp = () => {
 
     const uploadToBackend = async (file) => {
         const formData = new FormData();
-        formData.append('file', file);
-
+        const fileName = username;
+        const renamedFile = new File([file], fileName, { type: file.type });
+    
+        formData.append('file', renamedFile);
+    
         const ip = process.env.REACT_APP_BACKEND_IP;
         const url = `http://${ip}:8080/upload/picture`;
-
+    
         try {
             const response = await fetch(url, {
                 method: 'POST',
                 body: formData,
             });
-
+    
             if (!response.ok) {
                 throw new Error('Failed to upload file');
             }
-
+    
             console.log('File uploaded successfully');
         } catch (error) {
             console.error('Error uploading file:', error);
         }
     };
-
     const manageSignUp = async (e) => {
         e.preventDefault();
 

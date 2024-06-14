@@ -27,8 +27,8 @@ public class PictureUploadController {
 
 
             PutObjectRequest putObjectRequest = PutObjectRequest.builder()
-                    .bucket(System.getenv("S3_BUCKET_NAME"))  // TODO: DONE
-//                    .bucket("tic-tac-toe-266586")
+    //              .bucket(System.getenv("S3_BUCKET_NAME"))  // TODO:
+                    .bucket("tic-tac-toe-266586")
                     .key(key)
                     .contentType(file.getContentType())
                     .build();

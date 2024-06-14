@@ -19,6 +19,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.services.s3.S3Client;
 
 @RestController
 @Slf4j
@@ -35,16 +37,22 @@ public class GameController {
         return ResponseEntity.ok(gameService.createGame(player));
     }
 
-    @PostMapping("/connect")
-    public ResponseEntity<Game> connect(@RequestBody ConnectRequest connectRequest) throws InvalidParamException, InvalidGameException {
-        log.info("connect request: {}", connectRequest);
-        return ResponseEntity.ok(gameService.connectToGame(connectRequest.getPlayer(), connectRequest.getGameId()));
-    }
-
     @PostMapping("/connect/random")
     public ResponseEntity<Game> connectRandom(@RequestBody Player player) throws GameNotFoundException {
         log.info("connect random {}", player);
-        return ResponseEntity.ok(gameService.connectToRandomGame(player));
+        Game game = gameService.connectToRandomGame(player);
+        log.info("Player 1 photo: {}", game.getPlayer1().getPhotoURL());
+        log.info("Player 2 photo: {}", game.getPlayer2().getPhotoURL());
+        simpMessagingTemplate.convertAndSend("/topic/gameprogress/" + game.getGameId(), game);
+        return ResponseEntity.ok(game);
+    }
+
+    @PostMapping("/connect")
+    public ResponseEntity<Game> connect(@RequestBody ConnectRequest connectRequest) throws InvalidParamException, InvalidGameException {
+        log.info("connect request: {}", connectRequest);
+        Game game = gameService.connectToGame(connectRequest.getPlayer(), connectRequest.getGameId());
+        simpMessagingTemplate.convertAndSend("/topic/gameprogress/" + game.getGameId(), game);
+        return ResponseEntity.ok(game);
     }
 
     @PostMapping("/gameplay")
