@@ -7,6 +7,7 @@ import SignIn from "./SignIn";
 import SignOut from "./SignOut";
 import { refreshSessionTokenIfNeeded } from "./CognitoUtils";
 import GameList from "./GameList";
+import RankingList from "./RankingList"; // Importujemy nowy komponent
 
 const ip = process.env.REACT_APP_BACKEND_IP;
 const url = "http://" + ip + ":8080";
@@ -27,6 +28,10 @@ function App() {
   const [showSignUp, setShowSignUp] = useState(false);
   const [currentTurn, setCurrentTurn] = useState("");
   const [showGameList, setShowGameList] = useState(false);
+  const [showRankingList, setShowRankingList] = useState(false); // Nowy stan
+  const [client, setClient] = useState(null);
+  const [subscription, setSubscription] = useState(null);
+  const [gameEnded, setGameEnded] = useState(false);
 
   useEffect(() => {
     if (gameId) {
@@ -35,22 +40,28 @@ function App() {
   }, [gameId]);
 
   const connectToSocket = (gameId) => {
-    const client = new Client();
-    client.configure({
+    const newClient = new Client();
+    newClient.configure({
       brokerURL: "ws://" + ip + ":8080/gameplay",
       reconnectDelay: 5000,
       onConnect: () => {
         console.log("Connected");
 
-        client.subscribe(`/topic/gameprogress/${gameId}`, (message) => {
-          const data = JSON.parse(message.body);
-          console.log(data);
-          setPlayer1(data.player1.nickname);
-          setPlayer1Photo(data.player1.photoURL);
-          setPlayer2(data.player2.nickname);
-          setPlayer2Photo(data.player2.photoURL);
-          displayResponse(data);
-        });
+        const newSubscription = newClient.subscribe(
+          `/topic/gameprogress/${gameId}`,
+          (message) => {
+            const data = JSON.parse(message.body);
+            console.log(data);
+            setPlayer1(data.player1.nickname);
+            setPlayer1Photo(data.player1.photoURL);
+            setPlayer2(data.player2.nickname);
+            setPlayer2Photo(data.player2.photoURL);
+            displayResponse(data);
+          }
+        );
+
+        setSubscription(newSubscription);
+        localStorage.setItem('gameEnded', "false");
       },
       onStompError: (frame) => {
         console.error("Broker reported error: " + frame.headers["message"]);
@@ -61,7 +72,8 @@ function App() {
       },
     });
 
-    client.activate();
+    newClient.activate();
+    setClient(newClient);
   };
 
   const createGame = async () => {
@@ -169,6 +181,40 @@ function App() {
   };
 
   const displayResponse = (data) => {
+    if (data.winner) {
+      const ended = localStorage.getItem("gameEnded");
+      console.log("gameEnded: ", ended);
+      if (ended === "false") {
+        localStorage.setItem('gameEnded', "true");
+        setGameEnded(true);
+        alert("Wygrał " + data.winner);
+        console.log("Wygrał " + data.winner);
+        setGameOn(false);
+        console.log("player1: ", player1);
+        console.log("player2: ", player2);
+        console.log("localStorage: ", localStorage.getItem("username"));
+        if (data.winner === "X" && player1 === localStorage.getItem("username")) {
+          postRankingUpdate();
+        } else if (data.winner === "O" && player2 === localStorage.getItem("username")) {
+          postRankingUpdate();
+        }
+
+        if (subscription) {
+          subscription.unsubscribe();
+        }
+
+        if (client) {
+          client.deactivate();
+        }
+
+
+
+      }
+    } else {
+      setCurrentTurn(data.currentTurn);
+      setGameOn(true);
+    }
+
     const newTurns = turns.map((row, i) =>
       row.map((cell, j) => {
         if (data.board[i][j] === 1) return "X";
@@ -178,14 +224,6 @@ function App() {
       })
     );
     setTurns(newTurns);
-
-    if (data.winner) {
-      alert("Wygrał " + data.winner);
-      setGameOn(false);
-    } else {
-      setCurrentTurn(data.currentTurn);
-      setGameOn(true);
-    }
   };
 
   const handleGameIdChange = (event) => {
@@ -196,8 +234,42 @@ function App() {
     setShowGameList(true);
   };
 
+  const showRankingListHandler = () => { // Funkcja do wyświetlania rankingów
+    setShowRankingList(true);
+  };
+
   const backToMain = () => {
     setShowGameList(false);
+    setShowRankingList(false); // Powrót z rankingów
+  };
+
+  const postRankingUpdate = async () => {
+    await refreshSessionTokenIfNeeded();
+
+    const accessToken = localStorage.getItem("accessToken");
+
+    const username = localStorage.getItem("username");
+    const email = localStorage.getItem("email");
+
+    console.log("username: ", username);
+    console.log("email: ", email);
+
+    const response = await fetch(url + "/game/invoke-lambda", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${accessToken}`,
+      },
+      body: JSON.stringify({ username, email }),
+    });
+
+    if (!response.ok) {
+      const errorMessage = await response.text();
+      throw new Error(`Request failed: ${errorMessage}`);
+    }
+
+    const data = await response.json();
+    return data;
   };
 
   return (
@@ -211,6 +283,8 @@ function App() {
       {localStorage.getItem("accessToken") ? (
         showGameList ? (
           <GameList backToMain={backToMain} />
+        ) : showRankingList ? ( // Wyświetlanie rankingów
+          <RankingList backToMain={backToMain} />
         ) : (
           <div>
             <h1
@@ -337,18 +411,24 @@ function App() {
                 </td>
               </tr>
               <tr>
-                  <td colSpan="3" style={{ textAlign: 'center' }}>
-                    <div className="button-container">
-                      <SignOut />
-                      <button className="logoutButton" onClick={showGameListHandler}>
-                        Lista gier
-                      </button>
-                      <button className="logoutButton" onClick={showGameListHandler}>
-                        Rankingi
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+                <td colSpan="3" style={{ textAlign: "center" }}>
+                  <div className="button-container">
+                    <SignOut />
+                    <button
+                      className="logoutButton"
+                      onClick={showGameListHandler}
+                    >
+                      Lista gier
+                    </button>
+                    <button
+                      className="logoutButton"
+                      onClick={showRankingListHandler} // Ustawiamy wyświetlanie rankingów
+                    >
+                      Rankingi
+                    </button>
+                  </div>
+                </td>
+              </tr>
             </table>
           </div>
         )

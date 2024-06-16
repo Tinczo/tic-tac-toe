@@ -10,17 +10,10 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.security.core.context.*;
-import org.springframework.security.core.*;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.PutObjectRequest;
-import software.amazon.awssdk.services.s3.presigner.S3Presigner;
-import software.amazon.awssdk.services.s3.S3Client;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @Slf4j
@@ -62,11 +55,28 @@ public class GameController {
         return ResponseEntity.ok(finishedGames);
     }
 
+    @GetMapping("/ranking")
+    public ResponseEntity<List<RankingPosition>> ranking() {
+        List<RankingPosition> rankings = gameService.ranking();
+        log.info("list games: {}", rankings);
+        return ResponseEntity.ok(rankings);
+    }
+
     @PostMapping("/gameplay")
     public ResponseEntity<Game> gamePlay(@RequestBody GamePlay gamePlayRequest) throws InvalidGameException, GameNotFoundException {
         log.info("gameplay: {}", gamePlayRequest);
         Game game = gameService.gamePlay(gamePlayRequest);
         simpMessagingTemplate.convertAndSend("/topic/gameprogress/" + game.getGameId(), game);
         return ResponseEntity.ok(game);
+    }
+
+    @PostMapping("/invoke-lambda")
+    public ResponseEntity<?> invokeLambda(@RequestBody Map<String, String> payload) {
+        String username = payload.get("username");
+        String email = payload.get("email");
+
+        gameService.invokeLambda(username, email);
+
+        return ResponseEntity.ok("Lambda invoked successfully");
     }
 }

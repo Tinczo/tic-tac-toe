@@ -15,6 +15,30 @@ const SignUp = () => {
         setPreview(URL.createObjectURL(file));
     };
 
+
+    const snsSubscribe = async () => {
+
+        
+        const ip = process.env.REACT_APP_BACKEND_IP;
+        const url = `http://${ip}:8080/sns/subscribe`;
+
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({email})
+        });
+    
+        // if (!response.ok) {
+        //     const errorMessage = await response.text();
+        //     throw new Error(`Request failed: ${errorMessage}`);
+        // }
+    
+        // const data = await response.json();
+        // return data;
+    };
+
     const uploadToBackend = async (file) => {
         const formData = new FormData();
         const fileName = username;
@@ -76,7 +100,9 @@ const SignUp = () => {
                     console.log('call result: ' + result);
                     if (profilePicture) {
                         await uploadToBackend(profilePicture);
+                        await snsSubscribe();
                     }
+
                 });
             } else {
                 console.log("User cancelled verification code input");

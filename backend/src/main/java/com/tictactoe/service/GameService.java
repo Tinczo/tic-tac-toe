@@ -7,32 +7,41 @@ import com.tictactoe.model.*;
 import com.tictactoe.storage.GameStorage;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
+import software.amazon.awssdk.core.SdkBytes;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
 import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
 import software.amazon.awssdk.services.dynamodb.model.ScanResponse;
+import software.amazon.awssdk.services.lambda.model.InvokeRequest;
+import software.amazon.awssdk.services.lambda.model.InvokeResponse;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
+import software.amazon.awssdk.services.lambda.LambdaClient;
 import java.time.Duration;
 import java.util.*;
 
 import lombok.extern.slf4j.Slf4j;
+import software.amazon.awssdk.services.sns.SnsClient;
+import software.amazon.awssdk.services.sns.model.SnsException;
+import software.amazon.awssdk.services.sns.model.SubscribeRequest;
+import software.amazon.awssdk.services.sns.model.SubscribeResponse;
 
 @Service
 @Slf4j
 @AllArgsConstructor
 public class GameService {
 
+
     private final S3Client s3Client;
     private final S3Presigner s3Presigner;
-
     private DynamoDbClient dynamoDbClient;
+    private LambdaClient lambdaClient;
 
-    public Game createGame(Player player){
+    public Game createGame(Player player) {
         player.setPhotoURL(getPhotoUrl(player.getNickname()));
         Game game = new Game();
         game.setBoard(new int[3][3]);
@@ -44,12 +53,12 @@ public class GameService {
     }
 
     public Game connectToGame(Player player2, String gameId) throws InvalidParamException, InvalidGameException {
-        if(!GameStorage.getInstance().getGames().containsKey(gameId)){
+        if (!GameStorage.getInstance().getGames().containsKey(gameId)) {
             throw new InvalidParamException("Game with provided ID does not exist!");
         }
         Game game = GameStorage.getInstance().getGames().get(gameId);
 
-        if (game.getPlayer2() != null){
+        if (game.getPlayer2() != null) {
             throw new InvalidGameException("Game is not valid anymore!");
         }
 
@@ -76,31 +85,28 @@ public class GameService {
     }
 
     public Game gamePlay(GamePlay gamePlay) throws GameNotFoundException, InvalidGameException {
-        if(!GameStorage.getInstance().getGames().containsKey(gamePlay.getGameId())){
+        if (!GameStorage.getInstance().getGames().containsKey(gamePlay.getGameId())) {
             throw new GameNotFoundException("Game not found!");
         }
 
         Game game = GameStorage.getInstance().getGames().get(gamePlay.getGameId());
 
-        if(game.getStatus().equals(GameStatus.FINISHED)){
+        if (game.getStatus().equals(GameStatus.FINISHED)) {
             throw new InvalidGameException("Game is already finished!");
         }
 
-        int [][] board = game.getBoard();
+        int[][] board = game.getBoard();
         board[gamePlay.getCoordinateX()][gamePlay.getCoordinateY()] = gamePlay.getType().getValue();
 
         Boolean xWinner = checkWinner(game.getBoard(), TicTacToeSymbols.X);
         Boolean oWinner = checkWinner(game.getBoard(), TicTacToeSymbols.O);
 
-        if(xWinner)
-        {
+        if (xWinner) {
             game.setWinner(TicTacToeSymbols.X);
             game.getPlayer1().setScore(1);
             game.getPlayer2().setScore(0);
             saveGameResult(game.getGameId(), game.getPlayer1().getNickname(), game.getPlayer2().getNickname(), game.getPlayer1().getNickname());
-        }
-        else if (oWinner)
-        {
+        } else if (oWinner) {
             game.setWinner(TicTacToeSymbols.O);
             game.getPlayer1().setScore(0);
             game.getPlayer2().setScore(1);
@@ -108,10 +114,9 @@ public class GameService {
         }
 
         String turn;
-        if(game.getCurrentTurn().equals("O")) {
+        if (game.getCurrentTurn().equals("O")) {
             turn = "X";
-        }
-        else {
+        } else {
             turn = "O";
         }
         game.setCurrentTurn(turn);
@@ -122,7 +127,7 @@ public class GameService {
     }
 
     private Boolean checkWinner(int[][] board, TicTacToeSymbols ticTacToeSymbols) {
-        int [] boardArray = new int[9];
+        int[] boardArray = new int[9];
         int boardArrayIndex = 0;
         for (int[] ints : board) {
             for (int anInt : ints) {
@@ -131,12 +136,12 @@ public class GameService {
             }
         }
 
-        int [][] winningCombinations = {{0, 1, 2}, {3, 4, 5}, {6, 7, 8},
+        int[][] winningCombinations = {{0, 1, 2}, {3, 4, 5}, {6, 7, 8},
                 {0, 3, 6}, {1, 4, 7}, {2, 5, 8},
                 {0, 4, 8}, {2, 4, 6}};
 
         for (int[] winningCombination : winningCombinations) {
-            int counter=0;
+            int counter = 0;
             for (int i : winningCombination) {
                 if (boardArray[i] == ticTacToeSymbols.getValue()) {
                     counter++;
@@ -150,26 +155,26 @@ public class GameService {
     }
 
     private String getPhotoUrl(String nickname) {
-//        String bucketName = System.getenv("REACT_APP_S3_BUCKET_NAME"); //TODO:
-        String bucketName = "tic-tac-toe-266586";
-         try {
-             GetObjectRequest getObjectRequest = GetObjectRequest.builder()
-                     .bucket(bucketName)
-                     .key(nickname)
-                     .build();
+        String bucketName = System.getenv("REACT_APP_S3_BUCKET_NAME"); //TODO:
+//        String bucketName = "tic-tac-toe-266586";
+        try {
+            GetObjectRequest getObjectRequest = GetObjectRequest.builder()
+                    .bucket(bucketName)
+                    .key(nickname)
+                    .build();
 
-             GetObjectPresignRequest getObjectPresignRequest = GetObjectPresignRequest.builder()
-                     .signatureDuration(Duration.ofMinutes(10))
-                     .getObjectRequest(getObjectRequest)
-                     .build();
+            GetObjectPresignRequest getObjectPresignRequest = GetObjectPresignRequest.builder()
+                    .signatureDuration(Duration.ofMinutes(10))
+                    .getObjectRequest(getObjectRequest)
+                    .build();
 
-             PresignedGetObjectRequest presignedGetObjectRequest = s3Presigner.presignGetObject(getObjectPresignRequest);
-             String photoUrl = presignedGetObjectRequest.url().toString();
-             return photoUrl;
-         } catch (Exception e) {
-             // Ignorujemy wyjątek, próbujemy następne rozszerzenie
-         }
-        return "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTOwRConBYl2t6L8QMOAQqa5FDmPB_bg7EnGA&s"; // Zwraca null jeśli żadne z rozszerzeń nie pasuje
+            PresignedGetObjectRequest presignedGetObjectRequest = s3Presigner.presignGetObject(getObjectPresignRequest);
+            String photoUrl = presignedGetObjectRequest.url().toString();
+            return photoUrl;
+        } catch (Exception e) {
+            // Ignorujemy wyjątek, próbujemy następne rozszerzenie
+        }
+        return "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTOwRConBYl2t6L8QMOAQqa5FDmPB_bg7EnGA&s";
     }
 
     public void saveGameResult(String gameId, String player1, String player2, String winner) {
@@ -181,8 +186,8 @@ public class GameService {
         log.info("Saving game result to DynamoDB: " + item);
 
         PutItemRequest request = PutItemRequest.builder()
-//                .tableName(System.getenv("REACT_APP_DYNAMO_NAME")) //TODO:
-                .tableName("GameScores")
+                .tableName(System.getenv("REACT_APP_DYNAMO_NAME")) //TODO:
+//                .tableName("GameScores")
                 .item(item)
                 .build();
 
@@ -191,8 +196,8 @@ public class GameService {
 
     public List<FinishedGame> listFinishedGames() {
         ScanRequest scanRequest = ScanRequest.builder()
-//                .tableName(System.getenv("REACT_APP_DYNAMO_NAME")) //TODO:
-                .tableName("GameScores")
+                .tableName(System.getenv("REACT_APP_DYNAMO_NAME")) //TODO:
+//                .tableName("GameScores")
                 .build();
 
         ScanResponse scanResponse = dynamoDbClient.scan(scanRequest);
@@ -209,4 +214,51 @@ public class GameService {
 
         return finishedGames;
     }
+
+    public void invokeLambda(String username, String email) {
+        String payload = String.format("{\"username\":\"%s\", \"email\":\"%s\"}", username, email);
+
+        InvokeRequest invokeRequest = InvokeRequest.builder()
+                 .functionName(System.getenv("REACT_APP_LAMBDA_NAME")) //TODO:
+//                .functionName("UpdateRanking")
+                .payload(SdkBytes.fromUtf8String(payload))
+                .build();
+
+        InvokeResponse invokeResponse = lambdaClient.invoke(invokeRequest);
+
+        String response = invokeResponse.payload().asUtf8String();
+        System.out.println("Lambda response: " + response);
+    }
+
+    public List<RankingPosition> ranking() {
+        ScanRequest scanRequest = ScanRequest.builder()
+                .tableName(System.getenv("REACT_APP_DYNAMO_RAKING_NAME")) //TODO:
+//                .tableName("GameRankings")
+                .build();
+
+        ScanResponse scanResponse = dynamoDbClient.scan(scanRequest);
+        List<RankingPosition> rankingPositions = new ArrayList<>();
+
+        log.info("ScanResponse: {}", scanResponse);
+
+        for (Map<String, AttributeValue> item : scanResponse.items()) {
+            RankingPosition rankingPosition = new RankingPosition();
+            rankingPosition.setPlayer(item.get("Player").s());
+            rankingPosition.setWins(Integer.parseInt(item.get("Wins").n()));
+            rankingPositions.add(rankingPosition);
+        }
+
+        log.info("Unsorted rankings: {}", rankingPositions);
+
+        rankingPositions.sort(Comparator.comparingInt(RankingPosition::getWins).reversed());
+
+        for (int i = 0; i < rankingPositions.size(); i++) {
+            rankingPositions.get(i).setPosition(i + 1);
+        }
+
+        log.info("Sorted and positioned rankings: {}", rankingPositions);
+
+        return rankingPositions;
+    }
+
 }
