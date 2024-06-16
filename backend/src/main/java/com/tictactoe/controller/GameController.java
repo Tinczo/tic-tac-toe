@@ -4,10 +4,7 @@ import com.tictactoe.controller.dto.ConnectRequest;
 import com.tictactoe.exception.GameNotFoundException;
 import com.tictactoe.exception.InvalidGameException;
 import com.tictactoe.exception.InvalidParamException;
-import com.tictactoe.model.Game;
-import com.tictactoe.model.GamePlay;
-import com.tictactoe.model.Player;
-import com.tictactoe.model.Status;
+import com.tictactoe.model.*;
 import com.tictactoe.service.GameService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +18,9 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.S3Client;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @RestController
 @Slf4j
@@ -53,6 +53,13 @@ public class GameController {
         Game game = gameService.connectToGame(connectRequest.getPlayer(), connectRequest.getGameId());
         simpMessagingTemplate.convertAndSend("/topic/gameprogress/" + game.getGameId(), game);
         return ResponseEntity.ok(game);
+    }
+
+    @GetMapping("/list")
+    public ResponseEntity<List<FinishedGame>> listGames() {
+        List<FinishedGame> finishedGames = gameService.listFinishedGames();
+        log.info("list games: {}", finishedGames);
+        return ResponseEntity.ok(finishedGames);
     }
 
     @PostMapping("/gameplay")

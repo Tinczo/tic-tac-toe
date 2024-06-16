@@ -6,9 +6,8 @@ import SignUp from "./SignUp";
 import SignIn from "./SignIn";
 import SignOut from "./SignOut";
 import { refreshSessionTokenIfNeeded } from "./CognitoUtils";
+import GameList from "./GameList";
 
-// const ip = "localhost";
-// const ip = "3.235.16.88";
 const ip = process.env.REACT_APP_BACKEND_IP;
 const url = "http://" + ip + ":8080";
 
@@ -26,9 +25,8 @@ function App() {
   const [player1Photo, setPlayer1Photo] = useState("");
   const [player2Photo, setPlayer2Photo] = useState("");
   const [showSignUp, setShowSignUp] = useState(false);
-  const [winner, setWinner] = useState("");
-
   const [currentTurn, setCurrentTurn] = useState("");
+  const [showGameList, setShowGameList] = useState(false);
 
   useEffect(() => {
     if (gameId) {
@@ -88,11 +86,9 @@ function App() {
       setPlayer1Photo(response.data.player1.photoURL);
       setPlayer2("");
       setPlayer2Photo("");
-      setWinner("");
       start();
       alert("Stworzyłeś grę o identyfikatorze " + response.data.gameId);
-      
-      // console.log(process.env.REACT_APP_AWS_ACCESS_KEY_ID);
+
       connectToSocket(response.data.gameId);
 
       setGameOn(true);
@@ -130,7 +126,6 @@ function App() {
       connectToSocket(response.data.gameId);
       alert("Rozpoczynasz swoją grę z " + response.data.player1.nickname);
       setGameOn(true);
-      setWinner("");
       setPlayer1(response.data.player1.nickname);
       setPlayer1Photo(response.data.player1.photoURL);
       setPlayer2(response.data.player2.nickname);
@@ -183,13 +178,10 @@ function App() {
       })
     );
     setTurns(newTurns);
-    
+
     if (data.winner) {
-      if (winner === ""){
-        alert("Wygrał " + data.winner);
-        setWinner(data.winner);
-        setGameOn(false);
-      }
+      alert("Wygrał " + data.winner);
+      setGameOn(false);
     } else {
       setCurrentTurn(data.currentTurn);
       setGameOn(true);
@@ -198,6 +190,14 @@ function App() {
 
   const handleGameIdChange = (event) => {
     setGameId(event.target.value);
+  };
+
+  const showGameListHandler = () => {
+    setShowGameList(true);
+  };
+
+  const backToMain = () => {
+    setShowGameList(false);
   };
 
   return (
@@ -209,100 +209,149 @@ function App() {
       }}
     >
       {localStorage.getItem("accessToken") ? (
-        <div>
-          <h1
-            style={{ fontFamily: "'Press Start 2P', cursive", color: "#fff" }}
-          >
-            Tic Tac Toe
-          </h1>
-          <table style={{ width: '100%', tableLayout: 'fixed' }}>
-            <tr>
-            <td style={{ textAlign: 'center' }}>
-              <h1 style={{ fontFamily: "'Press Start 2P', cursive", color: "#fff" }}>
-                X
-              </h1>
-              <h1>{player1}</h1>
-              {player1Photo && <img src={player1Photo} alt={`${player1}'s profile`} style={{ width: '100px', height: '100px', objectFit: 'cover' }} />}
-            </td>
-              <td>
-                <div
-                  id="box"
-                  style={{
-                    background: "#4d3900",
-                    padding: "20px",
-                    borderRadius: "10px",
-                    maxWidth: "350px",
-                    margin: "10px auto",
-                  }}
-                  className="centered-container"
-                >
-                  <button className="button button-margin" onClick={createGame}>
-                    Stwórz grę
-                  </button>
-                  <input
-                    type="text"
-                    id="gameId"
-                    placeholder="Identyfikator gry"
-                    value={gameId}
-                    onChange={handleGameIdChange}
-                    className="input-text"
-                  />
-                  <button className="button" onClick={connectToRandom}>
-                    Dołącz do losowej gry
-                  </button>
-                  <ul
-                    id="gameBoard"
+        showGameList ? (
+          <GameList backToMain={backToMain} />
+        ) : (
+          <div>
+            <h1
+              style={{ fontFamily: "'Press Start 2P', cursive", color: "#fff" }}
+            >
+              Tic Tac Toe
+            </h1>
+            <table style={{ width: "100%", tableLayout: "fixed" }}>
+              <tr>
+                <td style={{ textAlign: "center" }}>
+                  <h1
                     style={{
-                      display: "flex",
-                      flexWrap: "wrap",
-                      justifyContent: "center",
-                      alignItems: "center",
-                      height: "100%",
-                      listStyle: "none",
-                      padding: 0,
+                      fontFamily: "'Press Start 2P', cursive",
+                      color: "#fff",
                     }}
                   >
-                    {turns.map((row, i) =>
-                      row.map((cell, j) => (
-                        <li
-                          key={`${i}-${j}`}
-                          onClick={() => makeAMove(i, j)}
-                          style={{
-                            float: "left",
-                            margin: "10px",
-                            height: "70px",
-                            width: "70px",
-                            textAlign: "center",
-                            fontSize: "50px",
-                            background: "#9a7100",
-                            color: "#ccc",
-                            textAlign: "center",
-                            borderRadius: "5px",
-                          }}
-                          className={
-                            cell === "X" ? "x" : cell === "O" ? "o" : ""
-                          }
-                        >
-                          {cell !== "#" ? cell : ""}
-                        </li>
-                      ))
-                    )}
-                  </ul>
-                  <div className="clearfix" style={{ clear: "both" }}></div>
-                </div>
-              </td>
+                    X
+                  </h1>
+                  <h1>{player1}</h1>
+                  {player1Photo && (
+                    <img
+                      src={player1Photo}
+                      alt={`${player1}'s profile`}
+                      style={{
+                        width: "100px",
+                        height: "100px",
+                        objectFit: "cover",
+                      }}
+                    />
+                  )}
+                </td>
+                <td>
+                  <div
+                    id="box"
+                    style={{
+                      background: "#4d3900",
+                      padding: "20px",
+                      borderRadius: "10px",
+                      maxWidth: "350px",
+                      margin: "10px auto",
+                    }}
+                    className="centered-container"
+                  >
+                    <button
+                      className="button button-margin"
+                      onClick={createGame}
+                    >
+                      Stwórz grę
+                    </button>
+                    <input
+                      type="text"
+                      id="gameId"
+                      placeholder="Identyfikator gry"
+                      value={gameId}
+                      onChange={handleGameIdChange}
+                      className="input-text"
+                    />
+                    <button className="button" onClick={connectToRandom}>
+                      Dołącz do losowej gry
+                    </button>
+                    <ul
+                      id="gameBoard"
+                      style={{
+                        display: "flex",
+                        flexWrap: "wrap",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        height: "100%",
+                        listStyle: "none",
+                        padding: 0,
+                      }}
+                    >
+                      {turns.map((row, i) =>
+                        row.map((cell, j) => (
+                          <li
+                            key={`${i}-${j}`}
+                            onClick={() => makeAMove(i, j)}
+                            style={{
+                              float: "left",
+                              margin: "10px",
+                              height: "70px",
+                              width: "70px",
+                              textAlign: "center",
+                              fontSize: "50px",
+                              background: "#9a7100",
+                              color: "#ccc",
+                              textAlign: "center",
+                              borderRadius: "5px",
+                            }}
+                            className={
+                              cell === "X" ? "x" : cell === "O" ? "o" : ""
+                            }
+                          >
+                            {cell !== "#" ? cell : ""}
+                          </li>
+                        ))
+                      )}
+                    </ul>
+                    <div className="clearfix" style={{ clear: "both" }}></div>
+                  </div>
+                </td>
 
-              <td style={{ textAlign: 'center' }}>
-              <h1 style={{ fontFamily: "'Press Start 2P', cursive", color: "#fff" }}>
-                O
-              </h1>
-              <h1>{player2}</h1>
-              {player2Photo && <img src={player2Photo} alt={`${player2}'s profile`} style={{ width: '100px', height: '100px', objectFit: 'cover' }} />}
-            </td>
-            </tr>
-          </table>
-          <SignOut />
-        </div>
+                <td style={{ textAlign: "center" }}>
+                  <h1
+                    style={{
+                      fontFamily: "'Press Start 2P', cursive",
+                      color: "#fff",
+                    }}
+                  >
+                    O
+                  </h1>
+                  <h1>{player2}</h1>
+                  {player2Photo && (
+                    <img
+                      src={player2Photo}
+                      alt={`${player2}'s profile`}
+                      style={{
+                        width: "100px",
+                        height: "100px",
+                        objectFit: "cover",
+                      }}
+                    />
+                  )}
+                </td>
+              </tr>
+              <tr>
+                  <td colSpan="3" style={{ textAlign: 'center' }}>
+                    <div className="button-container">
+                      <SignOut />
+                      <button className="logoutButton" onClick={showGameListHandler}>
+                        Lista gier
+                      </button>
+                      <button className="logoutButton" onClick={showGameListHandler}>
+                        Rankingi
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+            </table>
+          </div>
+        )
       ) : (
         <div className="centered-container">
           {showSignUp ? (

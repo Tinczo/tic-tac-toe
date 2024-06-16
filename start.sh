@@ -13,12 +13,17 @@ VPC_ID=$(curl -H "$TOKEN_HEADER" -s $METADATA_URL/network/interfaces/macs/${INTE
 USER_POOL_ID=$(aws secretsmanager get-secret-value --region us-east-1 --secret-id "app/userpool" --query "SecretString" --output text)
 CLIENT_ID=$(aws secretsmanager get-secret-value --region us-east-1 --secret-id "app/appclient" --query "SecretString" --output text)
 BUCKET_NAME=$(aws secretsmanager get-secret-value --region us-east-1 --secret-id "app/s3bucketid" --query "SecretString" --output text)
+DYNAMO_NAME=$(aws secretsmanager get-secret-value --region us-east-1 --secret-id "app/dynamoid" --query "SecretString" --output text)
+LAMBDA_NAME=$(aws secretsmanager get-secret-value --region us-east-1 --secret-id "app/lambda" --query "SecretString" --output text)
+
 
 REGION="us-east-1"
 REACT_APP_BACKEND_IP=$IP_V4
 REACT_APP_USER_POOL_ID=$USER_POOL_ID
 REACT_APP_CLIENT_ID=$CLIENT_ID
 REACT_APP_S3_BUCKET_NAME=$BUCKET_NAME
+REACT_APP_DYNAMO_NAME=$DYNAMO_NAME
+REACT_APP_LAMBDA_NAME=$LAMBDA_NAME
 
 # Zapisanie zmiennych środowiskowych do pliku .env
 echo "REACT_APP_BACKEND_IP=$IP_V4" > .env
@@ -27,6 +32,8 @@ echo "REACT_APP_CLIENT_ID=$CLIENT_ID" >> .env
 echo "REACT_APP_REGION=$REGION" >> .env
 echo "REACT_APP_AWS_REGION=$REGION" >> .env
 echo "REACT_APP_S3_BUCKET_NAME=$BUCKET_NAME" >> .env
+echo "REACT_APP_DYNAMO_NAME=$DYNAMO_NAME" >> .env
+echo "REACT_APP_LAMBDA_NAME=$LAMBDA_NAME" >> .env
 
 # Echo do konsoli dla sprawdzenia
 echo "Zmienne środowiskowe:"

@@ -18,6 +18,7 @@ import software.amazon.awssdk.auth.credentials.InstanceProfileCredentialsProvide
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
 import software.amazon.awssdk.services.s3.internal.crt.DefaultS3CrtAsyncClient;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 
@@ -73,4 +74,12 @@ public class SecurityConfiguration {
                 .credentialsProvider(StaticCredentialsProvider.create(AwsSessionCredentials.create(aws_access_key_id, aws_secret_access_key, aws_session_token))).build();
 //              .credentialsProvider(InstanceProfileCredentialsProvider.create()).build(); //TODO:
     }
+
+    @Bean
+    public DynamoDbClient dynamoDbClient() {
+        return DynamoDbClient.builder().region(Region.US_EAST_1)
+                .credentialsProvider(StaticCredentialsProvider.create(AwsSessionCredentials.create(aws_access_key_id, aws_secret_access_key, aws_session_token))).build();
+//              .credentialsProvider(InstanceProfileCredentialsProvider.create()).build(); //TODO:
+    }
+
 }

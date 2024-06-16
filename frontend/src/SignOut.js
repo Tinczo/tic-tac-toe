@@ -21,11 +21,8 @@ const SignOut = () => {
     };
 
     return (
-        <div className="text-center" id="loginBox">
-            {
                 <button className="logoutButton" onClick={manageLogout}>Wyloguj się</button>
-            }
-        </div>
+           
     );
 };
 

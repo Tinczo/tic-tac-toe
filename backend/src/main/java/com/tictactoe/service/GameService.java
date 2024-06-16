@@ -7,21 +7,30 @@ import com.tictactoe.model.*;
 import com.tictactoe.storage.GameStorage;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.PutItemRequest;
+import software.amazon.awssdk.services.dynamodb.model.ScanRequest;
+import software.amazon.awssdk.services.dynamodb.model.ScanResponse;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
-
 import java.time.Duration;
-import java.util.UUID;
+import java.util.*;
+
+import lombok.extern.slf4j.Slf4j;
 
 @Service
+@Slf4j
 @AllArgsConstructor
 public class GameService {
 
     private final S3Client s3Client;
     private final S3Presigner s3Presigner;
+
+    private DynamoDbClient dynamoDbClient;
 
     public Game createGame(Player player){
         player.setPhotoURL(getPhotoUrl(player.getNickname()));
@@ -88,12 +97,14 @@ public class GameService {
             game.setWinner(TicTacToeSymbols.X);
             game.getPlayer1().setScore(1);
             game.getPlayer2().setScore(0);
+            saveGameResult(game.getGameId(), game.getPlayer1().getNickname(), game.getPlayer2().getNickname(), game.getPlayer1().getNickname());
         }
         else if (oWinner)
         {
             game.setWinner(TicTacToeSymbols.O);
             game.getPlayer1().setScore(0);
             game.getPlayer2().setScore(1);
+            saveGameResult(game.getGameId(), game.getPlayer1().getNickname(), game.getPlayer2().getNickname(), game.getPlayer2().getNickname());
         }
 
         String turn;
@@ -159,5 +170,43 @@ public class GameService {
              // Ignorujemy wyjątek, próbujemy następne rozszerzenie
          }
         return "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTOwRConBYl2t6L8QMOAQqa5FDmPB_bg7EnGA&s"; // Zwraca null jeśli żadne z rozszerzeń nie pasuje
+    }
+
+    public void saveGameResult(String gameId, String player1, String player2, String winner) {
+        Map<String, AttributeValue> item = new HashMap<>();
+        item.put("GameId", AttributeValue.builder().s(gameId).build());
+        item.put("Player1", AttributeValue.builder().s(player1).build());
+        item.put("Player2", AttributeValue.builder().s(player2).build());
+        item.put("Winner", AttributeValue.builder().s(winner).build());
+        log.info("Saving game result to DynamoDB: " + item);
+
+        PutItemRequest request = PutItemRequest.builder()
+//                .tableName(System.getenv("REACT_APP_DYNAMO_NAME")) //TODO:
+                .tableName("GameScores")
+                .item(item)
+                .build();
+
+        dynamoDbClient.putItem(request);
+    }
+
+    public List<FinishedGame> listFinishedGames() {
+        ScanRequest scanRequest = ScanRequest.builder()
+//                .tableName(System.getenv("REACT_APP_DYNAMO_NAME")) //TODO:
+                .tableName("GameScores")
+                .build();
+
+        ScanResponse scanResponse = dynamoDbClient.scan(scanRequest);
+        List<FinishedGame> finishedGames = new ArrayList<>();
+
+        for (Map<String, software.amazon.awssdk.services.dynamodb.model.AttributeValue> item : scanResponse.items()) {
+            FinishedGame finishedGame = new FinishedGame();
+            finishedGame.setGameId(item.get("GameId").s());
+            finishedGame.setPlayer1(item.get("Player1").s());
+            finishedGame.setPlayer2(item.get("Player2").s());
+            finishedGame.setWinner(item.get("Winner").s());
+            finishedGames.add(finishedGame);
+        }
+
+        return finishedGames;
     }
 }
