@@ -232,7 +232,7 @@ public class GameService {
 
     public List<RankingPosition> ranking() {
         ScanRequest scanRequest = ScanRequest.builder()
-                .tableName(System.getenv("REACT_APP_DYNAMO_RAKING_NAME")) //TODO:
+                .tableName(System.getenv("REACT_APP_DYNAMO_RANKING_NAME")) //TODO:
 //                .tableName("GameRankings")
                 .build();
 
