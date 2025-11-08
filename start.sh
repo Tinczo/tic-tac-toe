@@ -46,5 +46,4 @@ echo "Zmienne środowiskowe:"
 cat .env
 cp .env frontend/.env
 
-# Uruchomienie Docker Compose
-sudo docker compose up
+sudo /usr/local/bin/docker-compose up -d
