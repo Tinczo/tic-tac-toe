@@ -25,10 +25,6 @@ import java.time.Duration;
 import java.util.*;
 
 import lombok.extern.slf4j.Slf4j;
-import software.amazon.awssdk.services.sns.SnsClient;
-import software.amazon.awssdk.services.sns.model.SnsException;
-import software.amazon.awssdk.services.sns.model.SubscribeRequest;
-import software.amazon.awssdk.services.sns.model.SubscribeResponse;
 
 @Service
 @Slf4j
