@@ -47,4 +47,4 @@ cat .env
 cp .env frontend/.env
 
 # Uruchomienie Docker Compose
-docker compose up -d
+COMPOSE_DOCKER_CLI_BUILD=0 /usr/local/bin/docker-compose up -d
